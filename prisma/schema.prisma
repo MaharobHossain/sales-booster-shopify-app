@@ -32,3 +32,17 @@ model Session {
   refreshToken        String?
   refreshTokenExpires DateTime?
 }
+
+
+model Announcement {
+  id         String   @id @default(cuid())
+  shop       String
+  message    String
+  link       String?
+  bgColor    String   @default("#202223")
+  textColor  String   @default("#ffffff")
+  fontSize   Int      @default(14)
+  isActive   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
