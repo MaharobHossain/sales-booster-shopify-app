@@ -20,7 +20,7 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
   const formData = await request.formData();
 
@@ -37,6 +37,56 @@ export const action = async ({ request }) => {
     where: { id: existing.id },
     data: { message, link, bgColor, textColor, fontSize, isActive },
   });
+
+  // আগে shop এর GraphQL ID বের করি
+  const shopResponse = await admin.graphql(`#graphql
+    query {
+      shop {
+        id
+      }
+    }`);
+  const shopData = await shopResponse.json();
+  const shopId = shopData.data.shop.id;
+
+  // Metafield set করি
+  const metafieldValue = JSON.stringify({
+    message,
+    link,
+    bgColor,
+    textColor,
+    fontSize,
+    isActive,
+  });
+
+  await admin.graphql(
+    `#graphql
+    mutation SetAnnouncementMetafield($metafields: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafields) {
+        metafields {
+          id
+          key
+          value
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        metafields: [
+          {
+            ownerId: shopId,
+            namespace: "sales_booster",
+            key: "announcement",
+            type: "json",
+            value: metafieldValue,
+          },
+        ],
+      },
+    }
+  );
 
   return { announcement: updated };
 };
@@ -65,6 +115,15 @@ export default function AnnouncementBar() {
       { method: "post" }
     );
   };
+
+  const handleDiscard = () => {
+  setMessage(announcement.message || "");
+  setLink(announcement.link || "");
+  setBgColor(announcement.bgColor);
+  setTextColor(announcement.textColor);
+  setFontSize(announcement.fontSize);
+  setIsActive(announcement.isActive);
+};
 
   return (
     <s-page heading="Announcement bar">
@@ -163,16 +222,21 @@ export default function AnnouncementBar() {
           </div>
 
           <div className="ab-actions">
-            <button type="button" className="ab-btn-secondary">
-              Discard
+            <button
+             type="button"
+             className="ab-btn-secondary"
+             onClick={handleDiscard}
+             >
+             Discard
             </button>
             <button
-              type="button"
-              className="ab-btn-primary"
-              onClick={handleSave}
-            >
-              Save
-            </button>
+            type="button"
+            className="ab-btn-primary"
+            onClick={handleSave}
+            disabled={fetcher.state !== "idle"}
+>
+  {fetcher.state !== "idle" ? "Saving..." : "Save"}
+</button>
           </div>
         </div>
       </s-section>
