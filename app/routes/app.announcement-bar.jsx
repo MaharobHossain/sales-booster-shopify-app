@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useLoaderData, useFetcher } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
-import "./announcement-bar/styles.css";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -30,15 +29,23 @@ export const action = async ({ request }) => {
   const textColor = formData.get("textColor");
   const fontSize = Number(formData.get("fontSize"));
   const isActive = formData.get("isActive") === "true";
+  const dismissible = formData.get("dismissible") === "true";
 
   const existing = await db.announcement.findFirst({ where: { shop } });
 
   const updated = await db.announcement.update({
     where: { id: existing.id },
-    data: { message, link, bgColor, textColor, fontSize, isActive },
+    data: {
+      message,
+      link,
+      bgColor,
+      textColor,
+      fontSize,
+      isActive,
+      dismissible,
+    },
   });
 
-  // আগে shop এর GraphQL ID বের করি
   const shopResponse = await admin.graphql(`#graphql
     query {
       shop {
@@ -48,7 +55,6 @@ export const action = async ({ request }) => {
   const shopData = await shopResponse.json();
   const shopId = shopData.data.shop.id;
 
-  // Metafield set করি
   const metafieldValue = JSON.stringify({
     message,
     link,
@@ -56,6 +62,7 @@ export const action = async ({ request }) => {
     textColor,
     fontSize,
     isActive,
+    dismissible,
   });
 
   await admin.graphql(
@@ -101,6 +108,9 @@ export default function AnnouncementBar() {
   const [textColor, setTextColor] = useState(announcement.textColor);
   const [fontSize, setFontSize] = useState(announcement.fontSize);
   const [isActive, setIsActive] = useState(announcement.isActive);
+  const [dismissible, setDismissible] = useState(
+    announcement.dismissible ?? true
+  );
 
   const handleSave = () => {
     fetcher.submit(
@@ -111,134 +121,107 @@ export default function AnnouncementBar() {
         textColor,
         fontSize: String(fontSize),
         isActive: String(isActive),
+        dismissible: String(dismissible),
       },
       { method: "post" }
     );
   };
 
   const handleDiscard = () => {
-  setMessage(announcement.message || "");
-  setLink(announcement.link || "");
-  setBgColor(announcement.bgColor);
-  setTextColor(announcement.textColor);
-  setFontSize(announcement.fontSize);
-  setIsActive(announcement.isActive);
-};
+    setMessage(announcement.message || "");
+    setLink(announcement.link || "");
+    setBgColor(announcement.bgColor);
+    setTextColor(announcement.textColor);
+    setFontSize(announcement.fontSize);
+    setIsActive(announcement.isActive);
+    setDismissible(announcement.dismissible ?? true);
+  };
 
   return (
     <s-page heading="Announcement bar">
-      <s-section>
-        <div className="ab-preview-label">Live preview</div>
+      <s-button
+        slot="primary-action"
+        variant="primary"
+        onClick={handleSave}
+        loading={fetcher.state !== "idle" ? "" : undefined}
+      >
+        Save
+      </s-button>
+      <s-button slot="secondary-actions" onClick={handleDiscard}>
+        Discard
+      </s-button>
+
+      <s-section heading="Live preview">
         <div
-          className="ab-preview-bar"
           style={{
             background: bgColor,
             color: textColor,
             fontSize: `${fontSize}px`,
+            textAlign: "center",
+            padding: "10px 16px",
+            borderRadius: "8px",
           }}
         >
           {message || "Your announcement text will appear here"}
         </div>
+      </s-section>
 
-        <div className="ab-card">
-          <div className="ab-card-header">
-            <h2>Announcement details</h2>
-            <span className={`ab-badge ${isActive ? "ab-badge-active" : ""}`}>
-              {isActive ? "Active" : "Inactive"}
-            </span>
-          </div>
+      <s-section heading="Announcement details">
+        <s-badge tone={isActive ? "success" : "neutral"}>
+          {isActive ? "Active" : "Inactive"}
+        </s-badge>
 
-          <div className="ab-field">
-            <label htmlFor="message">Message</label>
-            <input
-              id="message"
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-          </div>
+        <s-stack direction="block" gap="base">
+          <s-text-field
+            label="Message"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          ></s-text-field>
 
-          <div className="ab-field">
-            <label htmlFor="link">Link (optional)</label>
-            <input
-              id="link"
-              type="text"
-              placeholder="/collections/all"
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-            />
-          </div>
+          <s-text-field
+            label="Link (optional)"
+            placeholder="/collections/all"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+          ></s-text-field>
 
-          <div className="ab-row">
-            <div className="ab-field">
-              <label htmlFor="bgColor">Background color</label>
-              <input
-                id="bgColor"
-                type="color"
-                value={bgColor}
-                onChange={(e) => setBgColor(e.target.value)}
-              />
-            </div>
-            <div className="ab-field">
-              <label htmlFor="textColor">Text color</label>
-              <input
-                id="textColor"
-                type="color"
-                value={textColor}
-                onChange={(e) => setTextColor(e.target.value)}
-              />
-            </div>
-          </div>
+          <s-stack direction="inline" gap="base">
+            <s-color-field
+              label="Background color"
+              value={bgColor}
+              onChange={(e) => setBgColor(e.target.value)}
+            ></s-color-field>
 
-          <div className="ab-field">
-            <label htmlFor="fontSize">Font size</label>
-            <div className="ab-slider-row">
-              <input
-                id="fontSize"
-                type="range"
-                min="12"
-                max="24"
-                step="1"
-                value={fontSize}
-                onChange={(e) => setFontSize(Number(e.target.value))}
-              />
-              <span>{fontSize}px</span>
-            </div>
-          </div>
+            <s-color-field
+              label="Text color"
+              value={textColor}
+              onChange={(e) => setTextColor(e.target.value)}
+            ></s-color-field>
+          </s-stack>
 
-          <div className="ab-toggle-row">
-            <div>
-              <p className="ab-toggle-title">Active</p>
-              <p className="ab-toggle-sub">Show this bar on your storefront</p>
-            </div>
-            <label className="ab-switch" aria-label="Active">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-              />
-              <span className="ab-slider"></span>
-            </label>
-          </div>
+          <s-range-slider
+            label={`Font size (${fontSize}px)`}
+            min="12"
+            max="24"
+            step="1"
+            value={fontSize}
+            onChange={(e) => setFontSize(Number(e.target.value))}
+          ></s-range-slider>
 
-          <div className="ab-actions">
-            <button
-             type="button"
-             className="ab-btn-secondary"
-             onClick={handleDiscard}
-             >
-             Discard
-            </button>
-            <button
-            type="button"
-            className="ab-btn-primary"
-            onClick={handleSave}
-            disabled={fetcher.state !== "idle"}
->
-  {fetcher.state !== "idle" ? "Saving..." : "Save"}
-</button>
-          </div>
-        </div>
+          <s-switch
+            label="Active"
+            details="Show this bar on your storefront"
+            checked={isActive}
+            onChange={(e) => setIsActive(e.target.checked)}
+          ></s-switch>
+
+          <s-switch
+            label="Dismissible"
+            details="Let customers close this bar"
+            checked={dismissible}
+            onChange={(e) => setDismissible(e.target.checked)}
+          ></s-switch>
+        </s-stack>
       </s-section>
     </s-page>
   );
