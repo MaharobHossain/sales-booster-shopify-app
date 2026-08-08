@@ -42,6 +42,7 @@ model Announcement {
   bgColor     String   @default("#202223")
   textColor   String   @default("#ffffff")
   fontSize    Int      @default(14)
+  textAlign   String   @default("center")
   isActive    Boolean  @default(false)
   dismissible Boolean  @default(true)
   createdAt   DateTime @default(now())

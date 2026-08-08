@@ -28,6 +28,7 @@ export const action = async ({ request }) => {
   const bgColor = formData.get("bgColor");
   const textColor = formData.get("textColor");
   const fontSize = Number(formData.get("fontSize"));
+  const textAlign = formData.get("textAlign");
   const isActive = formData.get("isActive") === "true";
   const dismissible = formData.get("dismissible") === "true";
 
@@ -41,6 +42,7 @@ export const action = async ({ request }) => {
       bgColor,
       textColor,
       fontSize,
+      textAlign,
       isActive,
       dismissible,
     },
@@ -61,6 +63,7 @@ export const action = async ({ request }) => {
     bgColor,
     textColor,
     fontSize,
+    textAlign,
     isActive,
     dismissible,
   });
@@ -107,6 +110,9 @@ export default function AnnouncementBar() {
   const [bgColor, setBgColor] = useState(announcement.bgColor);
   const [textColor, setTextColor] = useState(announcement.textColor);
   const [fontSize, setFontSize] = useState(announcement.fontSize);
+  const [textAlign, setTextAlign] = useState(
+    announcement.textAlign || "center"
+  );
   const [isActive, setIsActive] = useState(announcement.isActive);
   const [dismissible, setDismissible] = useState(
     announcement.dismissible ?? true
@@ -120,6 +126,7 @@ export default function AnnouncementBar() {
         bgColor,
         textColor,
         fontSize: String(fontSize),
+        textAlign,
         isActive: String(isActive),
         dismissible: String(dismissible),
       },
@@ -133,9 +140,20 @@ export default function AnnouncementBar() {
     setBgColor(announcement.bgColor);
     setTextColor(announcement.textColor);
     setFontSize(announcement.fontSize);
+    setTextAlign(announcement.textAlign || "center");
     setIsActive(announcement.isActive);
     setDismissible(announcement.dismissible ?? true);
   };
+
+  const isDirty =
+    message !== (announcement.message || "") ||
+    link !== (announcement.link || "") ||
+    bgColor !== announcement.bgColor ||
+    textColor !== announcement.textColor ||
+    fontSize !== announcement.fontSize ||
+    textAlign !== (announcement.textAlign || "center") ||
+    isActive !== announcement.isActive ||
+    dismissible !== (announcement.dismissible ?? true);
 
   return (
     <s-page heading="Announcement bar">
@@ -144,12 +162,15 @@ export default function AnnouncementBar() {
         variant="primary"
         onClick={handleSave}
         loading={fetcher.state !== "idle" ? "" : undefined}
+        disabled={!isDirty || fetcher.state !== "idle" ? "" : undefined}
       >
         Save
       </s-button>
-      <s-button slot="secondary-actions" onClick={handleDiscard}>
-        Discard
-      </s-button>
+      {isDirty && (
+        <s-button slot="secondary-actions" onClick={handleDiscard}>
+          Discard
+        </s-button>
+      )}
 
       <s-section heading="Live preview">
         <div
@@ -157,7 +178,7 @@ export default function AnnouncementBar() {
             background: bgColor,
             color: textColor,
             fontSize: `${fontSize}px`,
-            textAlign: "center",
+            textAlign: textAlign,
             padding: "10px 16px",
             borderRadius: "8px",
           }}
@@ -199,14 +220,28 @@ export default function AnnouncementBar() {
             ></s-color-field>
           </s-stack>
 
-          <s-range-slider
-            label={`Font size (${fontSize}px)`}
-            min="12"
-            max="24"
-            step="1"
-            value={fontSize}
-            onChange={(e) => setFontSize(Number(e.target.value))}
-          ></s-range-slider>
+          <s-stack direction="block" gap="tight">
+            <s-text>Font size ({fontSize}px)</s-text>
+            <input
+              type="range"
+              min="12"
+              max="24"
+              step="1"
+              value={fontSize}
+              onChange={(e) => setFontSize(Number(e.target.value))}
+              style={{ width: "100%" }}
+            />
+          </s-stack>
+
+          <s-select
+            label="Text alignment"
+            value={textAlign}
+            onChange={(e) => setTextAlign(e.target.value)}
+          >
+            <s-option value="left">Left</s-option>
+            <s-option value="center">Center</s-option>
+            <s-option value="right">Right</s-option>
+          </s-select>
 
           <s-switch
             label="Active"
