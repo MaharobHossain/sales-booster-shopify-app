@@ -1,0 +1,250 @@
+{% assign settings = shop.metafields.sales_booster.recommendation.value %}
+
+{% if settings and settings.isActive and product %}
+  <div
+    id="sb-recommendations-{{ block.id }}"
+    class="sb-recommendations"
+    data-product-id="{{ product.id }}"
+    data-limit="{{ settings.productLimit | default: 4 }}"
+    data-card-style="{{ settings.cardStyle | default: 'style1' }}"
+    data-columns-desktop="{{ settings.columnsDesktop | default: 4 }}"
+    data-columns-mobile="{{ settings.columnsMobile | default: 2 }}"
+    style="background: {{ settings.backgroundColor | default: '#ffffff' }}; padding: 24px 16px;"
+  >
+    <p
+      class="sb-rec-heading"
+      style="
+        color: {{ settings.headingColor | default: '#202223' }};
+        font-size: {{ settings.headingFontSizeMobile | default: 18 }}px;
+        font-weight: 700;
+        margin: 0 0 16px;
+      "
+      data-desktop-size="{{ settings.headingFontSizeDesktop | default: 24 }}"
+      data-mobile-size="{{ settings.headingFontSizeMobile | default: 18 }}"
+    >
+      {{ settings.heading | default: "You might also like" }}
+    </p>
+
+    <div class="sb-rec-grid" id="sb-rec-grid-{{ block.id }}"></div>
+  </div>
+
+  <style>
+    .sb-recommendations {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .sb-rec-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(
+        {{ settings.columnsMobile | default: 2 }},
+        1fr
+      );
+    }
+
+    @media screen and (min-width: 750px) {
+      .sb-rec-grid {
+        grid-template-columns: repeat(
+          {{ settings.columnsDesktop | default: 4 }},
+          1fr
+        );
+      }
+
+      .sb-rec-heading {
+        font-size: {{ settings.headingFontSizeDesktop | default: 24 }}px !important;
+      }
+    }
+
+    .sb-rec-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .sb-rec-card img {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      display: block;
+    }
+
+    .sb-rec-card-title {
+      font-size: 13px;
+      font-weight: 500;
+      margin: 8px 0 2px;
+      color: #202223;
+    }
+
+    .sb-rec-card-price {
+      font-size: 13px;
+      color: #6d7175;
+      margin: 0;
+    }
+
+    /* Style 1 - Minimal */
+    .sb-rec-style1 img {
+      border-radius: 10px;
+    }
+
+    /* Style 2 - Bordered */
+    .sb-rec-style2 {
+      border: 1px solid #d1d3d6;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .sb-rec-style2 .sb-rec-card-body {
+      padding: 12px;
+    }
+
+    /* Style 3 - Shadow */
+    .sb-rec-style3 {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+    .sb-rec-style3 .sb-rec-card-body {
+      padding: 14px;
+    }
+    .sb-rec-style3 .sb-rec-card-price {
+      color: #008060;
+    }
+
+    /* Style 4 - Price overlay */
+    .sb-rec-style4 {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .sb-rec-style4 .sb-rec-image-wrap {
+      position: relative;
+    }
+    .sb-rec-style4 .sb-rec-price-badge {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #202223;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .sb-rec-style4 .sb-rec-card-title {
+      margin-top: 10px;
+    }
+
+    /* Theme style - generic fallback */
+    .sb-rec-theme {
+      border: 1px solid #e1e3e5;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .sb-rec-theme .sb-rec-card-body {
+      padding: 10px;
+    }
+  </style>
+
+  <script>
+    (function () {
+      var container = document.getElementById(
+        "sb-recommendations-{{ block.id }}"
+      );
+      if (!container) return;
+
+      var productId = container.dataset.productId;
+      var limit = container.dataset.limit;
+      var cardStyle = container.dataset.cardStyle;
+      var grid = document.getElementById("sb-rec-grid-{{ block.id }}");
+
+      fetch(
+        "/recommendations/products.json?product_id=" +
+          productId +
+          "&limit=" +
+          limit +
+          "&intent=related"
+      )
+        .then(function (res) {
+          return res.json();
+        })
+        .then(function (data) {
+          if (!data.products || data.products.length === 0) {
+            container.style.display = "none";
+            return;
+          }
+
+          data.products.forEach(function (product) {
+            var card = document.createElement("a");
+            card.href = product.url;
+            card.className = "sb-rec-card sb-rec-" + cardStyle;
+
+            var price = "$" + (product.price / 100).toFixed(2);
+            var image =
+              product.featured_image ||
+              "https://cdn.shopify.com/s/assets/no-image-2048-5e88c1b20e087fb7bbe9a3771824e743c244f437e4f8ba93bbf7b11b53f7824.gif";
+
+            if (cardStyle === "style4") {
+              card.innerHTML =
+                '<div class="sb-rec-image-wrap">' +
+                '<img src="' +
+                image +
+                '" alt="' +
+                product.title +
+                '">' +
+                '<span class="sb-rec-price-badge">' +
+                price +
+                "</span>" +
+                "</div>" +
+                '<p class="sb-rec-card-title">' +
+                product.title +
+                "</p>";
+            } else if (cardStyle === "style2" || cardStyle === "style3" || cardStyle === "theme") {
+              card.innerHTML =
+                '<img src="' +
+                image +
+                '" alt="' +
+                product.title +
+                '">' +
+                '<div class="sb-rec-card-body">' +
+                '<p class="sb-rec-card-title">' +
+                product.title +
+                "</p>" +
+                '<p class="sb-rec-card-price">' +
+                price +
+                "</p>" +
+                "</div>";
+            } else {
+              card.innerHTML =
+                '<img src="' +
+                image +
+                '" alt="' +
+                product.title +
+                '">' +
+                '<p class="sb-rec-card-title">' +
+                product.title +
+                "</p>" +
+                '<p class="sb-rec-card-price">' +
+                price +
+                "</p>";
+            }
+
+            grid.appendChild(card);
+          });
+        })
+        .catch(function () {
+          container.style.display = "none";
+        });
+    })();
+  </script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Product Recommendations",
+  "target": "section"
+}
+{% endschema %}
