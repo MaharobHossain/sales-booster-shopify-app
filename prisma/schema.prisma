@@ -65,3 +65,26 @@ model Recommendation {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 }
+
+model CountdownTimer {
+  id                     String    @id @default(cuid())
+  shop                   String
+  template               String    @default("minimal")
+  mode                   String    @default("fixed")
+  endDateTime            DateTime?
+  dailyEndTime           String    @default("23:59")
+  title                  String    @default("Limited Time Offer")
+  caption                String    @default("")
+  buttonText             String    @default("")
+  buttonLink             String    @default("")
+  bgColor                String    @default("#202223")
+  textColor              String    @default("#ffffff")
+  accentColor            String    @default("#008060")
+  titleFontSizeDesktop   Int       @default(22)
+  titleFontSizeMobile    Int       @default(16)
+  numberFontSizeDesktop  Int       @default(36)
+  numberFontSizeMobile   Int       @default(24)
+  isActive               Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+}
