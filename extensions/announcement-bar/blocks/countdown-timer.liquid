@@ -1,0 +1,271 @@
+{% assign settings = shop.metafields.sales_booster.countdown.value %}
+
+{% if settings and settings.isActive %}
+  <div
+    id="sb-countdown-{{ block.id }}"
+    class="sb-countdown sb-countdown-{{ settings.template | default: 'minimal' }}"
+    data-mode="{{ settings.mode | default: 'fixed' }}"
+    data-end-datetime="{{ settings.endDateTime }}"
+    data-daily-end-time="{{ settings.dailyEndTime | default: '23:59' }}"
+    style="background: {{ settings.bgColor | default: '#202223' }}; color: {{ settings.textColor | default: '#ffffff' }};"
+  >
+    {% if settings.template == "boldCentered" and settings.caption != blank %}
+      <p class="sb-cd-caption">{{ settings.caption }}</p>
+    {% endif %}
+
+    <p class="sb-cd-title">
+      {{ settings.title | default: "Limited Time Offer" }}
+    </p>
+
+    {% if settings.template == "cardStyle" and settings.caption != blank %}
+      <p class="sb-cd-caption">{{ settings.caption }}</p>
+    {% endif %}
+
+    <div class="sb-cd-numbers" id="sb-cd-numbers-{{ block.id }}">
+      <span class="sb-cd-unit">
+        <span class="sb-cd-num" data-unit="days">00</span>
+        <span class="sb-cd-label">days</span>
+      </span>
+      <span class="sb-cd-colon">:</span>
+      <span class="sb-cd-unit">
+        <span class="sb-cd-num" data-unit="hours">00</span>
+        <span class="sb-cd-label">hours</span>
+      </span>
+      <span class="sb-cd-colon">:</span>
+      <span class="sb-cd-unit">
+        <span class="sb-cd-num" data-unit="minutes">00</span>
+        <span class="sb-cd-label">minutes</span>
+      </span>
+      <span class="sb-cd-colon">:</span>
+      <span class="sb-cd-unit">
+        <span class="sb-cd-num" data-unit="seconds">00</span>
+        <span class="sb-cd-label">seconds</span>
+      </span>
+    </div>
+
+    {% if settings.buttonText != blank %}
+      <a href="{{ settings.buttonLink | default: '#' }}" class="sb-cd-button" style="background: {{ settings.accentColor | default: '#008060' }};">{{ settings.buttonText }}</a>
+    {% endif %}
+  </div>
+
+  <style>
+    .sb-countdown {
+      box-sizing: border-box;
+      padding: 24px 16px;
+      text-align: center;
+      width: 100%;
+    }
+
+    .sb-cd-caption {
+      font-size: 12px;
+      letter-spacing: 2px;
+      margin: 0 0 8px;
+      opacity: 0.7;
+      text-transform: uppercase;
+    }
+
+    .sb-cd-title {
+      font-size: {{ settings.titleFontSizeMobile | default: 16 }}px;
+      font-weight: 600;
+      margin: 0 0 14px;
+    }
+
+    .sb-cd-numbers {
+      align-items: center;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .sb-cd-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .sb-cd-num {
+      font-size: {{ settings.numberFontSizeMobile | default: 24 }}px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .sb-cd-label {
+      font-size: 10px;
+      margin-top: 4px;
+      opacity: 0.7;
+      text-transform: uppercase;
+    }
+
+    .sb-cd-colon {
+      font-size: {{ settings.numberFontSizeMobile | default: 24 }}px;
+      font-weight: 700;
+      opacity: 0.5;
+    }
+
+    .sb-cd-button {
+      border: none;
+      border-radius: 6px;
+      color: #ffffff;
+      display: inline-block;
+      font-size: 14px;
+      margin-top: 18px;
+      padding: 10px 24px;
+      text-decoration: none;
+    }
+
+    @media screen and (min-width: 750px) {
+      .sb-cd-title {
+        font-size: {{ settings.titleFontSizeDesktop | default: 22 }}px;
+      }
+      .sb-cd-num,
+      .sb-cd-colon {
+        font-size: {{ settings.numberFontSizeDesktop | default: 36 }}px;
+      }
+      .sb-cd-numbers {
+        gap: 20px;
+      }
+    }
+
+    .sb-countdown-minimal .sb-cd-numbers {
+      gap: 20px;
+    }
+
+    .sb-countdown-darkGradient {
+      background: linear-gradient(135deg, {{ settings.bgColor | default: '#202223' }}, #000) !important;
+    }
+    .sb-countdown-darkGradient .sb-cd-title {
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .sb-countdown-darkGradient .sb-cd-num {
+      text-shadow: 0 0 20px {{ settings.accentColor | default: '#008060' }};
+    }
+    .sb-countdown-darkGradient .sb-cd-button {
+      background: transparent !important;
+      border: 1px solid {{ settings.accentColor | default: '#008060' }};
+      border-radius: 999px;
+    }
+
+    .sb-countdown-boxedNumbers .sb-cd-unit {
+      background: {{ settings.accentColor | default: '#008060' }};
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .sb-countdown-boxedNumbers .sb-cd-colon {
+      opacity: 1;
+    }
+    .sb-countdown-boxedNumbers .sb-cd-numbers {
+      gap: 6px;
+    }
+
+    .sb-countdown-boldCentered .sb-cd-numbers {
+      gap: 4px;
+    }
+    .sb-countdown-boldCentered .sb-cd-num,
+    .sb-countdown-boldCentered .sb-cd-colon {
+      letter-spacing: 2px;
+    }
+    .sb-countdown-boldCentered .sb-cd-label {
+      display: none;
+    }
+    .sb-countdown-boldCentered .sb-cd-button {
+      border-radius: 999px;
+    }
+
+    .sb-countdown-cardStyle {
+      border-radius: 16px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .sb-countdown-cardStyle .sb-cd-unit {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      min-width: 50px;
+      padding: 10px 6px;
+    }
+    .sb-countdown-cardStyle .sb-cd-colon {
+      opacity: 0;
+      width: 2px;
+    }
+    .sb-countdown-cardStyle .sb-cd-numbers {
+      gap: 10px;
+    }
+  </style>
+
+  <script>
+    (function () {
+      var container = document.getElementById("sb-countdown-{{ block.id }}");
+      if (!container) return;
+
+      var mode = container.dataset.mode;
+      var endDateTimeRaw = container.dataset.endDatetime;
+      var dailyEndTime = container.dataset.dailyEndTime;
+      var timerInterval;
+
+      function getTarget() {
+        if (mode === "daily") {
+          var parts = (dailyEndTime || "23:59").split(":");
+          var target = new Date();
+          target.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+          if (target.getTime() < Date.now()) {
+            target.setDate(target.getDate() + 1);
+          }
+          return target;
+        }
+        if (endDateTimeRaw) {
+          return new Date(endDateTimeRaw);
+        }
+        return null;
+      }
+
+      function pad(n) {
+        return String(n).padStart(2, "0");
+      }
+
+      function update() {
+        var target = getTarget();
+
+        if (!target) {
+          container.style.display = "none";
+          return;
+        }
+
+        var diff = target.getTime() - Date.now();
+
+        if (diff <= 0) {
+          if (mode === "fixed") {
+            container.style.display = "none";
+            clearInterval(timerInterval);
+            return;
+          }
+          diff = 0;
+        }
+
+        var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        var hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        var minutes = Math.floor((diff / (1000 * 60)) % 60);
+        var seconds = Math.floor((diff / 1000) % 60);
+
+        var daysEl = container.querySelector('[data-unit="days"]');
+        var hoursEl = container.querySelector('[data-unit="hours"]');
+        var minutesEl = container.querySelector('[data-unit="minutes"]');
+        var secondsEl = container.querySelector('[data-unit="seconds"]');
+
+        if (daysEl) daysEl.textContent = pad(days);
+        if (hoursEl) hoursEl.textContent = pad(hours);
+        if (minutesEl) minutesEl.textContent = pad(minutes);
+        if (secondsEl) secondsEl.textContent = pad(seconds);
+      }
+
+      update();
+      timerInterval = setInterval(update, 1000);
+    })();
+  </script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Countdown Timer",
+  "target": "section"
+}
+{% endschema %}
