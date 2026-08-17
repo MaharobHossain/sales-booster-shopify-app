@@ -1,0 +1,246 @@
+{% assign settings = shop.metafields.sales_booster.social_proof.value %}
+
+{% if settings and settings.isActive %}
+  {% assign show_here = false %}
+  {% if settings.pageTargeting == "all" %}
+    {% assign show_here = true %}
+  {% elsif settings.pageTargeting == "home" and request.page_type == "index" %}
+    {% assign show_here = true %}
+  {% elsif settings.pageTargeting == "product" and request.page_type == "product" %}
+    {% assign show_here = true %}
+  {% elsif settings.pageTargeting == "collection" and request.page_type == "collection" %}
+    {% assign show_here = true %}
+  {% endif %}
+
+  {% if show_here %}
+    <div
+      id="sb-social-proof-{{ block.id }}"
+      class="sb-sp-container sb-sp-{{ settings.position | default: 'bottom-left' }}"
+      data-mode="{{ settings.mode | default: 'demo' }}"
+      data-display-duration="{{ settings.displayDuration | default: 5000 }}"
+      data-interval="{{ settings.intervalBetween | default: 8000 }}"
+      data-first-delay="{{ settings.firstDelayMs | default: 3000 }}"
+      data-randomize="{{ settings.randomizeOrder | default: true }}"
+      data-show-time-ago="{{ settings.showTimeAgo | default: true }}"
+      data-items="{{ settings.demoItems | json | escape }}"
+      style="
+        --sb-sp-bg: {{ settings.bgColor | default: '#ffffff' }};
+        --sb-sp-text: {{ settings.textColor | default: '#202223' }};
+        --sb-sp-accent: {{ settings.accentColor | default: '#008060' }};
+        --sb-sp-font-mobile: {{ settings.fontSizeMobile | default: 12 }}px;
+        --sb-sp-font-desktop: {{ settings.fontSizeDesktop | default: 14 }}px;
+      "
+    ></div>
+
+    <style>
+      .sb-sp-container {
+        bottom: 20px;
+        font-size: var(--sb-sp-font-mobile);
+        pointer-events: none;
+        position: fixed;
+        z-index: 999999;
+      }
+
+      @media screen and (min-width: 750px) {
+        .sb-sp-container {
+          font-size: var(--sb-sp-font-desktop);
+        }
+      }
+
+      .sb-sp-bottom-left {
+        bottom: 20px;
+        left: 20px;
+      }
+      .sb-sp-bottom-right {
+        bottom: 20px;
+        right: 20px;
+      }
+      .sb-sp-top-left {
+        top: 20px;
+        left: 20px;
+      }
+      .sb-sp-top-right {
+        top: 20px;
+        right: 20px;
+      }
+
+      .sb-sp-card {
+        align-items: center;
+        background: var(--sb-sp-bg);
+        border-radius: 10px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        color: var(--sb-sp-text);
+        display: flex;
+        gap: 10px;
+        max-width: 320px;
+        opacity: 0;
+        padding: 12px 14px;
+        pointer-events: auto;
+        transform: translateY(20px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+      }
+
+      .sb-sp-top-left .sb-sp-card,
+      .sb-sp-top-right .sb-sp-card {
+        transform: translateY(-20px);
+      }
+
+      .sb-sp-card.sb-sp-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .sb-sp-icon {
+        flex-shrink: 0;
+        font-size: 20px;
+      }
+
+      .sb-sp-message {
+        line-height: 1.4;
+      }
+
+      .sb-sp-time {
+        color: var(--sb-sp-accent);
+        font-size: 11px;
+        margin-top: 2px;
+      }
+
+      .sb-sp-close {
+        background: none;
+        border: none;
+        color: var(--sb-sp-text);
+        cursor: pointer;
+        font-size: 16px;
+        opacity: 0.5;
+        padding: 0;
+      }
+    </style>
+
+    <script>
+      (function () {
+        var container = document.getElementById(
+          "sb-social-proof-{{ block.id }}"
+        );
+        if (!container) return;
+
+        var items = [];
+        try {
+          items = JSON.parse(container.dataset.items || "[]");
+        } catch (e) {
+          items = [];
+        }
+
+        if (items.length === 0) return;
+
+        var displayDuration = parseInt(container.dataset.displayDuration, 10);
+        var interval = parseInt(container.dataset.interval, 10);
+        var firstDelay = parseInt(container.dataset.firstDelay, 10);
+        var randomize = container.dataset.randomize === "true";
+        var showTimeAgo = container.dataset.showTimeAgo === "true";
+
+        var typeIcons = {
+          purchase: "🛒",
+          viewer: "👀",
+          lowstock: "⚠️",
+          custom: "🔔",
+        };
+
+        function buildMessage(item) {
+          if (item.type === "purchase") {
+            return (
+              (item.name || "Someone") +
+              " from " +
+              (item.location || "somewhere") +
+              " just bought " +
+              (item.product || "a product")
+            );
+          }
+          if (item.type === "viewer") {
+            return (item.viewerCount || "12") + " people are viewing this page";
+          }
+          if (item.type === "lowstock") {
+            return (
+              "Only " +
+              (item.stockCount || "3") +
+              " left of " +
+              (item.product || "this item") +
+              "!"
+            );
+          }
+          return item.customMessage || "";
+        }
+
+        function shuffle(arr) {
+          var a = arr.slice();
+          for (var i = a.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = a[i];
+            a[i] = a[j];
+            a[j] = tmp;
+          }
+          return a;
+        }
+
+        var queue = randomize ? shuffle(items) : items.slice();
+        var queueIndex = 0;
+
+        function showNext() {
+          if (queueIndex >= queue.length) {
+            queueIndex = 0;
+            if (randomize) queue = shuffle(items);
+          }
+
+          var item = queue[queueIndex];
+          queueIndex++;
+
+          var card = document.createElement("div");
+          card.className = "sb-sp-card";
+          card.innerHTML =
+            '<span class="sb-sp-icon">' +
+            (typeIcons[item.type] || "🔔") +
+            "</span>" +
+            '<div class="sb-sp-body">' +
+            '<div class="sb-sp-message">' +
+            buildMessage(item) +
+            "</div>" +
+            (showTimeAgo
+              ? '<div class="sb-sp-time">' +
+                (Math.floor(Math.random() * 10) + 1) +
+                " minutes ago</div>"
+              : "") +
+            "</div>" +
+            '<button class="sb-sp-close" aria-label="Close">&times;</button>';
+
+          container.innerHTML = "";
+          container.appendChild(card);
+
+          requestAnimationFrame(function () {
+            card.classList.add("sb-sp-visible");
+          });
+
+          var hideTimeout = setTimeout(function () {
+            card.classList.remove("sb-sp-visible");
+          }, displayDuration);
+
+          card
+            .querySelector(".sb-sp-close")
+            .addEventListener("click", function () {
+              clearTimeout(hideTimeout);
+              card.classList.remove("sb-sp-visible");
+            });
+
+          setTimeout(showNext, interval);
+        }
+
+        setTimeout(showNext, firstDelay);
+      })();
+    </script>
+  {% endif %}
+{% endif %}
+
+{% schema %}
+{
+  "name": "Social Proof",
+  "target": "section"
+}
+{% endschema %}
