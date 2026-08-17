@@ -30,6 +30,7 @@ export const action = async ({ request }) => {
   const shop = session.shop;
   const formData = await request.formData();
 
+  const template = formData.get("template");
   const mode = formData.get("mode");
   const position = formData.get("position");
   const pageTargeting = formData.get("pageTargeting");
@@ -40,8 +41,11 @@ export const action = async ({ request }) => {
   const showTimeAgo = formData.get("showTimeAgo") === "true";
   const demoItems = formData.get("demoItems");
   const bgColor = formData.get("bgColor");
+  const gradientStart = formData.get("gradientStart");
+  const gradientEnd = formData.get("gradientEnd");
   const textColor = formData.get("textColor");
   const accentColor = formData.get("accentColor");
+  const brandLine = formData.get("brandLine");
   const fontSizeDesktop = Number(formData.get("fontSizeDesktop"));
   const fontSizeMobile = Number(formData.get("fontSizeMobile"));
   const isActive = formData.get("isActive") === "true";
@@ -51,6 +55,7 @@ export const action = async ({ request }) => {
   const updated = await db.socialProof.update({
     where: { id: existing.id },
     data: {
+      template,
       mode,
       position,
       pageTargeting,
@@ -61,8 +66,11 @@ export const action = async ({ request }) => {
       showTimeAgo,
       demoItems,
       bgColor,
+      gradientStart,
+      gradientEnd,
       textColor,
       accentColor,
+      brandLine,
       fontSizeDesktop,
       fontSizeMobile,
       isActive,
@@ -79,6 +87,7 @@ export const action = async ({ request }) => {
   const shopId = shopData.data.shop.id;
 
   const metafieldValue = JSON.stringify({
+    template,
     mode,
     position,
     pageTargeting,
@@ -89,8 +98,11 @@ export const action = async ({ request }) => {
     showTimeAgo,
     demoItems: JSON.parse(demoItems || "[]"),
     bgColor,
+    gradientStart,
+    gradientEnd,
     textColor,
     accentColor,
+    brandLine,
     fontSizeDesktop,
     fontSizeMobile,
     isActive,
@@ -191,6 +203,13 @@ function DemoItemCard({ item, onChange, onRemove }) {
               </s-option>
             ))}
           </s-select>
+           <s-text-field
+            label="Avatar image URL (optional)"
+            placeholder="https://example.com/photo.jpg"
+            value={item.avatarUrl || ""}
+            onChange={(e) => onChange({ ...item, avatarUrl: e.target.value })}
+            >
+            </s-text-field>
           <s-button variant="tertiary" tone="critical" onClick={onRemove}>
             Remove
           </s-button>
@@ -296,6 +315,99 @@ function NotificationPreview({ item, settings, fontSize }) {
   );
 }
 
+function GradientAvatarsPreview({ item, settings, fontSize }) {
+  return (
+    <div
+      style={{
+        background: `linear-gradient(135deg, ${settings.gradientStart}, ${settings.gradientEnd})`,
+        borderRadius: "16px",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+        maxWidth: "340px",
+        padding: "16px",
+        position: "relative",
+      }}
+    >
+      <button
+        style={{
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          fontSize: "16px",
+          opacity: 0.5,
+          position: "absolute",
+          right: "10px",
+          top: "10px",
+        }}
+      >
+        ✕
+      </button>
+
+      <div style={{ alignItems: "center", display: "flex", gap: "12px" }}>
+        {item.avatarUrl ? (
+          <img
+            src={item.avatarUrl}
+            alt=""
+            style={{
+              border: "2px solid #fff",
+              borderRadius: "50%",
+              height: "40px",
+              objectFit: "cover",
+              width: "40px",
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              alignItems: "center",
+              background: "#a2d2ff",
+              border: "2px solid #fff",
+              borderRadius: "50%",
+              color: "#fff",
+              display: "flex",
+              fontSize: "16px",
+              fontWeight: "700",
+              height: "40px",
+              justifyContent: "center",
+              width: "40px",
+            }}
+          >
+            {(item.name || "S").charAt(0).toUpperCase()}
+          </div>
+        )}
+
+        <div>
+          <div
+            style={{
+              color: settings.textColor,
+              fontSize: `${fontSize}px`,
+              fontWeight: "700",
+            }}
+          >
+            {buildMessage(item)}
+          </div>
+          {settings.brandLine && (
+            <div
+              style={{
+                color: settings.textColor,
+                fontSize: "10px",
+                marginTop: "4px",
+                opacity: 0.6,
+              }}
+            >
+              {settings.brandLine}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const templateOptionsSp = [
+  { value: "simple", label: "Simple card" },
+  { value: "gradientAvatars", label: "Gradient avatars" },
+];
+
 const positionOptions = [
   { value: "bottom-left", label: "Bottom left" },
   { value: "bottom-right", label: "Bottom right" },
@@ -314,6 +426,7 @@ export default function SocialProof() {
   const { socialProof, demoItems: initialDemoItems } = useLoaderData();
   const fetcher = useFetcher();
 
+  const [template, setTemplate] = useState(socialProof.template);
   const [mode, setMode] = useState(socialProof.mode);
   const [position, setPosition] = useState(socialProof.position);
   const [pageTargeting, setPageTargeting] = useState(
@@ -344,8 +457,13 @@ export default function SocialProof() {
         ]
   );
   const [bgColor, setBgColor] = useState(socialProof.bgColor);
+  const [gradientStart, setGradientStart] = useState(
+    socialProof.gradientStart
+  );
+  const [gradientEnd, setGradientEnd] = useState(socialProof.gradientEnd);
   const [textColor, setTextColor] = useState(socialProof.textColor);
   const [accentColor, setAccentColor] = useState(socialProof.accentColor);
+  const [brandLine, setBrandLine] = useState(socialProof.brandLine || "");
   const [fontSizeDesktop, setFontSizeDesktop] = useState(
     socialProof.fontSizeDesktop
   );
@@ -376,6 +494,7 @@ export default function SocialProof() {
   const handleSave = () => {
     fetcher.submit(
       {
+        template,
         mode,
         position,
         pageTargeting,
@@ -386,8 +505,11 @@ export default function SocialProof() {
         showTimeAgo: String(showTimeAgo),
         demoItems: JSON.stringify(demoItemsList),
         bgColor,
+        gradientStart,
+        gradientEnd,
         textColor,
         accentColor,
+        brandLine,
         fontSizeDesktop: String(fontSizeDesktop),
         fontSizeMobile: String(fontSizeMobile),
         isActive: String(isActive),
@@ -397,6 +519,7 @@ export default function SocialProof() {
   };
 
   const handleDiscard = () => {
+    setTemplate(socialProof.template);
     setMode(socialProof.mode);
     setPosition(socialProof.position);
     setPageTargeting(socialProof.pageTargeting);
@@ -407,14 +530,18 @@ export default function SocialProof() {
     setShowTimeAgo(socialProof.showTimeAgo);
     setDemoItemsList(initialDemoItems);
     setBgColor(socialProof.bgColor);
+    setGradientStart(socialProof.gradientStart);
+    setGradientEnd(socialProof.gradientEnd);
     setTextColor(socialProof.textColor);
     setAccentColor(socialProof.accentColor);
+    setBrandLine(socialProof.brandLine || "");
     setFontSizeDesktop(socialProof.fontSizeDesktop);
     setFontSizeMobile(socialProof.fontSizeMobile);
     setIsActive(socialProof.isActive);
   };
 
   const isDirty =
+    template !== socialProof.template ||
     mode !== socialProof.mode ||
     position !== socialProof.position ||
     pageTargeting !== socialProof.pageTargeting ||
@@ -425,8 +552,11 @@ export default function SocialProof() {
     showTimeAgo !== socialProof.showTimeAgo ||
     JSON.stringify(demoItemsList) !== JSON.stringify(initialDemoItems) ||
     bgColor !== socialProof.bgColor ||
+    gradientStart !== socialProof.gradientStart ||
+    gradientEnd !== socialProof.gradientEnd ||
     textColor !== socialProof.textColor ||
     accentColor !== socialProof.accentColor ||
+    brandLine !== (socialProof.brandLine || "") ||
     fontSizeDesktop !== socialProof.fontSizeDesktop ||
     fontSizeMobile !== socialProof.fontSizeMobile ||
     isActive !== socialProof.isActive;
@@ -490,13 +620,20 @@ export default function SocialProof() {
             padding: "16px",
           }}
         >
-          {demoItemsList.length > 0 && (
-            <NotificationPreview
-              item={currentPreviewItem}
-              settings={{ bgColor, textColor, accentColor, showTimeAgo }}
-              fontSize={activeFontSize}
-            />
-          )}
+          {demoItemsList.length > 0 &&
+            (template === "gradientAvatars" ? (
+              <GradientAvatarsPreview
+                item={currentPreviewItem}
+                settings={{ gradientStart, gradientEnd, textColor, brandLine }}
+                fontSize={activeFontSize}
+              />
+            ) : (
+              <NotificationPreview
+                item={currentPreviewItem}
+                settings={{ bgColor, textColor, accentColor, showTimeAgo }}
+                fontSize={activeFontSize}
+              />
+            ))}
         </div>
 
         {demoItemsList.length > 1 && (
@@ -522,6 +659,18 @@ export default function SocialProof() {
         </s-badge>
 
         <s-stack direction="block" gap="base">
+          <s-select
+            label="Template"
+            value={template}
+            onChange={(e) => setTemplate(e.target.value)}
+          >
+            {templateOptionsSp.map((opt) => (
+              <s-option key={opt.value} value={opt.value}>
+                {opt.label}
+              </s-option>
+            ))}
+          </s-select>
+
           <s-select
             label="Data source"
             value={mode}
@@ -613,7 +762,8 @@ export default function SocialProof() {
 
           <s-stack direction="block" gap="tight">
             <s-text>
-              Gap between notifications ({(intervalBetween / 1000).toFixed(1)}s)
+              Gap between notifications ({(intervalBetween / 1000).toFixed(1)}
+              s)
             </s-text>
             <input
               type="range"
@@ -644,24 +794,53 @@ export default function SocialProof() {
       </s-section>
 
       <s-section heading="Colors">
-        <s-stack direction="inline" gap="base">
-          <s-color-field
-            label="Background color"
-            value={bgColor}
-            onChange={(e) => setBgColor(e.target.value)}
-          ></s-color-field>
+        <s-stack direction="block" gap="base">
+          {template === "gradientAvatars" ? (
+            <s-stack direction="inline" gap="base">
+              <s-color-field
+                label="Gradient start"
+                value={gradientStart}
+                onChange={(e) => setGradientStart(e.target.value)}
+              ></s-color-field>
+              <s-color-field
+                label="Gradient end"
+                value={gradientEnd}
+                onChange={(e) => setGradientEnd(e.target.value)}
+              ></s-color-field>
+              <s-color-field
+                label="Text color"
+                value={textColor}
+                onChange={(e) => setTextColor(e.target.value)}
+              ></s-color-field>
+            </s-stack>
+          ) : (
+            <s-stack direction="inline" gap="base">
+              <s-color-field
+                label="Background color"
+                value={bgColor}
+                onChange={(e) => setBgColor(e.target.value)}
+              ></s-color-field>
+              <s-color-field
+                label="Text color"
+                value={textColor}
+                onChange={(e) => setTextColor(e.target.value)}
+              ></s-color-field>
+              <s-color-field
+                label="Accent color"
+                value={accentColor}
+                onChange={(e) => setAccentColor(e.target.value)}
+              ></s-color-field>
+            </s-stack>
+          )}
 
-          <s-color-field
-            label="Text color"
-            value={textColor}
-            onChange={(e) => setTextColor(e.target.value)}
-          ></s-color-field>
-
-          <s-color-field
-            label="Accent color"
-            value={accentColor}
-            onChange={(e) => setAccentColor(e.target.value)}
-          ></s-color-field>
+          {template === "gradientAvatars" && (
+            <s-text-field
+              label="Brand line (optional)"
+              placeholder="© Your Brand"
+              value={brandLine}
+              onChange={(e) => setBrandLine(e.target.value)}
+            ></s-text-field>
+          )}
         </s-stack>
       </s-section>
 

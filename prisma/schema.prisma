@@ -92,6 +92,7 @@ model CountdownTimer {
 model SocialProof {
   id              String   @id @default(cuid())
   shop            String
+  template        String   @default("simple")
   mode            String   @default("demo")
   position        String   @default("bottom-left")
   pageTargeting   String   @default("all")
@@ -102,8 +103,11 @@ model SocialProof {
   showTimeAgo     Boolean  @default(true)
   demoItems       String   @default("[]")
   bgColor         String   @default("#ffffff")
+  gradientStart   String   @default("#fff9db")
+  gradientEnd     String   @default("#ffe3ec")
   textColor       String   @default("#202223")
   accentColor     String   @default("#008060")
+  brandLine       String   @default("")
   fontSizeDesktop Int      @default(14)
   fontSizeMobile  Int      @default(12)
   isActive        Boolean  @default(false)
