@@ -1,21 +1,24 @@
 {% assign settings = shop.metafields.sales_booster.social_proof.value %}
 
-{% if settings and settings.isActive %}
+{% if settings != blank and settings.isActive %}
   {% assign show_here = false %}
-  {% if settings.pageTargeting == "all" %}
+  {% assign target_pages = settings.pageTargeting | default: "all" %}
+
+  {% if target_pages == "all" %}
     {% assign show_here = true %}
-  {% elsif settings.pageTargeting == "home" and request.page_type == "index" %}
+  {% elsif target_pages == "home" and template == "index" %}
     {% assign show_here = true %}
-  {% elsif settings.pageTargeting == "product" and request.page_type == "product" %}
+  {% elsif target_pages == "product" and template contains "product" %}
     {% assign show_here = true %}
-  {% elsif settings.pageTargeting == "collection" and request.page_type == "collection" %}
+  {% elsif target_pages == "collection" and template contains "collection" %}
     {% assign show_here = true %}
   {% endif %}
 
-  {% if show_here %}
+  {% if show_here and settings.demoItems.size > 0 %}
     <div
       id="sb-social-proof-{{ block.id }}"
       class="sb-sp-container sb-sp-{{ settings.position | default: 'bottom-left' }}"
+      data-template="{{ settings.template | default: 'simple' }}"
       data-mode="{{ settings.mode | default: 'demo' }}"
       data-display-duration="{{ settings.displayDuration | default: 5000 }}"
       data-interval="{{ settings.intervalBetween | default: 8000 }}"
@@ -23,8 +26,11 @@
       data-randomize="{{ settings.randomizeOrder | default: true }}"
       data-show-time-ago="{{ settings.showTimeAgo | default: true }}"
       data-items="{{ settings.demoItems | json | escape }}"
+      data-brand-line="{{ settings.brandLine | escape }}"
       style="
         --sb-sp-bg: {{ settings.bgColor | default: '#ffffff' }};
+        --sb-sp-gradient-start: {{ settings.gradientStart | default: '#fff9db' }};
+        --sb-sp-gradient-end: {{ settings.gradientEnd | default: '#ffe3ec' }};
         --sb-sp-text: {{ settings.textColor | default: '#202223' }};
         --sb-sp-accent: {{ settings.accentColor | default: '#008060' }};
         --sb-sp-font-mobile: {{ settings.fontSizeMobile | default: 12 }}px;
@@ -34,7 +40,6 @@
 
     <style>
       .sb-sp-container {
-        bottom: 20px;
         font-size: var(--sb-sp-font-mobile);
         pointer-events: none;
         position: fixed;
@@ -47,24 +52,31 @@
         }
       }
 
-      .sb-sp-bottom-left {
-        bottom: 20px;
-        left: 20px;
-      }
-      .sb-sp-bottom-right {
-        bottom: 20px;
-        right: 20px;
-      }
-      .sb-sp-top-left {
-        top: 20px;
-        left: 20px;
-      }
-      .sb-sp-top-right {
-        top: 20px;
-        right: 20px;
-      }
+      .sb-sp-bottom-left { bottom: 20px; left: 20px; }
+      .sb-sp-bottom-right { bottom: 20px; right: 20px; }
+      .sb-sp-top-left { top: 20px; left: 20px; }
+      .sb-sp-top-right { top: 20px; right: 20px; }
 
       .sb-sp-card {
+        opacity: 0;
+        pointer-events: auto;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+      }
+
+      .sb-sp-bottom-left .sb-sp-card,
+      .sb-sp-bottom-right .sb-sp-card {
+        transform: translateY(20px);
+      }
+      .sb-sp-top-left .sb-sp-card,
+      .sb-sp-top-right .sb-sp-card {
+        transform: translateY(-20px);
+      }
+      .sb-sp-card.sb-sp-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .sb-sp-simple {
         align-items: center;
         background: var(--sb-sp-bg);
         border-radius: 10px;
@@ -73,36 +85,77 @@
         display: flex;
         gap: 10px;
         max-width: 320px;
-        opacity: 0;
         padding: 12px 14px;
-        pointer-events: auto;
-        transform: translateY(20px);
-        transition: opacity 0.3s ease, transform 0.3s ease;
       }
 
-      .sb-sp-top-left .sb-sp-card,
-      .sb-sp-top-right .sb-sp-card {
-        transform: translateY(-20px);
-      }
-
-      .sb-sp-card.sb-sp-visible {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      .sb-sp-icon {
+      .sb-sp-simple .sb-sp-icon {
         flex-shrink: 0;
         font-size: 20px;
       }
 
-      .sb-sp-message {
+      .sb-sp-simple .sb-sp-message {
         line-height: 1.4;
       }
 
-      .sb-sp-time {
+      .sb-sp-simple .sb-sp-time {
         color: var(--sb-sp-accent);
         font-size: 11px;
         margin-top: 2px;
+      }
+
+      .sb-sp-gradient {
+        background: linear-gradient(
+          135deg,
+          var(--sb-sp-gradient-start),
+          var(--sb-sp-gradient-end)
+        );
+        border-radius: 16px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        color: var(--sb-sp-text);
+        max-width: 340px;
+        padding: 16px;
+        position: relative;
+      }
+
+      .sb-sp-gradient-inner {
+        align-items: center;
+        display: flex;
+        gap: 12px;
+      }
+
+      .sb-sp-avatar {
+        border: 2px solid #fff;
+        border-radius: 50%;
+        flex-shrink: 0;
+        height: 40px;
+        object-fit: cover;
+        width: 40px;
+      }
+
+      .sb-sp-avatar-fallback {
+        align-items: center;
+        background: #a2d2ff;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        color: #fff;
+        display: flex;
+        flex-shrink: 0;
+        font-size: 16px;
+        font-weight: 700;
+        height: 40px;
+        justify-content: center;
+        width: 40px;
+      }
+
+      .sb-sp-gradient-message {
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .sb-sp-brand-line {
+        font-size: 10px;
+        margin-top: 4px;
+        opacity: 0.6;
       }
 
       .sb-sp-close {
@@ -113,6 +166,12 @@
         font-size: 16px;
         opacity: 0.5;
         padding: 0;
+      }
+
+      .sb-sp-gradient .sb-sp-close {
+        position: absolute;
+        right: 10px;
+        top: 10px;
       }
     </style>
 
@@ -132,6 +191,8 @@
 
         if (items.length === 0) return;
 
+        var template = container.dataset.template;
+        var brandLine = container.dataset.brandLine || "";
         var displayDuration = parseInt(container.dataset.displayDuration, 10);
         var interval = parseInt(container.dataset.interval, 10);
         var firstDelay = parseInt(container.dataset.firstDelay, 10);
@@ -156,7 +217,9 @@
             );
           }
           if (item.type === "viewer") {
-            return (item.viewerCount || "12") + " people are viewing this page";
+            return (
+              (item.viewerCount || "12") + " people are viewing this page"
+            );
           }
           if (item.type === "lowstock") {
             return (
@@ -170,6 +233,12 @@
           return item.customMessage || "";
         }
 
+        function escapeHtml(str) {
+          var div = document.createElement("div");
+          div.textContent = str || "";
+          return div.innerHTML;
+        }
+
         function shuffle(arr) {
           var a = arr.slice();
           for (var i = a.length - 1; i > 0; i--) {
@@ -179,6 +248,61 @@
             a[j] = tmp;
           }
           return a;
+        }
+
+        function buildSimpleCard(item) {
+          var card = document.createElement("div");
+          card.className = "sb-sp-card sb-sp-simple";
+          card.innerHTML =
+            '<span class="sb-sp-icon">' +
+            (typeIcons[item.type] || "🔔") +
+            "</span>" +
+            '<div class="sb-sp-body">' +
+            '<div class="sb-sp-message">' +
+            escapeHtml(buildMessage(item)) +
+            "</div>" +
+            (showTimeAgo
+              ? '<div class="sb-sp-time">' +
+                (Math.floor(Math.random() * 10) + 1) +
+                " minutes ago</div>"
+              : "") +
+            "</div>" +
+            '<button class="sb-sp-close" aria-label="Close">&times;</button>';
+          return card;
+        }
+
+        function buildGradientCard(item) {
+          var card = document.createElement("div");
+          card.className = "sb-sp-card sb-sp-gradient";
+
+          var avatarHtml = "";
+          if (item.avatarUrl) {
+            avatarHtml =
+              '<img class="sb-sp-avatar" src="' +
+              escapeHtml(item.avatarUrl) +
+              '" alt="">';
+          } else {
+            var initial = ((item.name || "S").charAt(0) || "S").toUpperCase();
+            avatarHtml =
+              '<div class="sb-sp-avatar-fallback">' + initial + "</div>";
+          }
+
+          card.innerHTML =
+            '<button class="sb-sp-close" aria-label="Close">&times;</button>' +
+            '<div class="sb-sp-gradient-inner">' +
+            avatarHtml +
+            "<div>" +
+            '<div class="sb-sp-gradient-message">' +
+            escapeHtml(buildMessage(item)) +
+            "</div>" +
+            (brandLine
+              ? '<div class="sb-sp-brand-line">' +
+                escapeHtml(brandLine) +
+                "</div>"
+              : "") +
+            "</div>" +
+            "</div>";
+          return card;
         }
 
         var queue = randomize ? shuffle(items) : items.slice();
@@ -193,23 +317,10 @@
           var item = queue[queueIndex];
           queueIndex++;
 
-          var card = document.createElement("div");
-          card.className = "sb-sp-card";
-          card.innerHTML =
-            '<span class="sb-sp-icon">' +
-            (typeIcons[item.type] || "🔔") +
-            "</span>" +
-            '<div class="sb-sp-body">' +
-            '<div class="sb-sp-message">' +
-            buildMessage(item) +
-            "</div>" +
-            (showTimeAgo
-              ? '<div class="sb-sp-time">' +
-                (Math.floor(Math.random() * 10) + 1) +
-                " minutes ago</div>"
-              : "") +
-            "</div>" +
-            '<button class="sb-sp-close" aria-label="Close">&times;</button>';
+          var card =
+            template === "gradientAvatars"
+              ? buildGradientCard(item)
+              : buildSimpleCard(item);
 
           container.innerHTML = "";
           container.appendChild(card);
@@ -222,12 +333,13 @@
             card.classList.remove("sb-sp-visible");
           }, displayDuration);
 
-          card
-            .querySelector(".sb-sp-close")
-            .addEventListener("click", function () {
+          var closeBtn = card.querySelector(".sb-sp-close");
+          if (closeBtn) {
+            closeBtn.addEventListener("click", function () {
               clearTimeout(hideTimeout);
               card.classList.remove("sb-sp-visible");
             });
+          }
 
           setTimeout(showNext, interval);
         }
