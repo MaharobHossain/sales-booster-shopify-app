@@ -14,29 +14,31 @@
     {% assign show_here = true %}
   {% endif %}
 
-  {% if show_here and settings.demoItems.size > 0 %}
-    <div
-      id="sb-social-proof-{{ block.id }}"
-      class="sb-sp-container sb-sp-{{ settings.position | default: 'bottom-left' }}"
-      data-template="{{ settings.template | default: 'simple' }}"
-      data-mode="{{ settings.mode | default: 'demo' }}"
-      data-display-duration="{{ settings.displayDuration | default: 5000 }}"
-      data-interval="{{ settings.intervalBetween | default: 8000 }}"
-      data-first-delay="{{ settings.firstDelayMs | default: 3000 }}"
-      data-randomize="{{ settings.randomizeOrder | default: true }}"
-      data-show-time-ago="{{ settings.showTimeAgo | default: true }}"
-      data-items="{{ settings.demoItems | json | escape }}"
-      data-brand-line="{{ settings.brandLine | escape }}"
-      style="
-        --sb-sp-bg: {{ settings.bgColor | default: '#ffffff' }};
-        --sb-sp-gradient-start: {{ settings.gradientStart | default: '#fff9db' }};
-        --sb-sp-gradient-end: {{ settings.gradientEnd | default: '#ffe3ec' }};
-        --sb-sp-text: {{ settings.textColor | default: '#202223' }};
-        --sb-sp-accent: {{ settings.accentColor | default: '#008060' }};
-        --sb-sp-font-mobile: {{ settings.fontSizeMobile | default: 12 }}px;
-        --sb-sp-font-desktop: {{ settings.fontSizeDesktop | default: 14 }}px;
-      "
-    ></div>
+  {% if show_here %}
+    {% if settings.mode == 'real' or settings.demoItems.size > 0 %}
+      <div
+        id="sb-social-proof-{{ block.id }}"
+        class="sb-sp-container sb-sp-{{ settings.position | default: 'bottom-left' }}"
+        data-template="{{ settings.template | default: 'simple' }}"
+        data-mode="{{ settings.mode | default: 'demo' }}"
+        data-display-duration="{{ settings.displayDuration | default: 5000 }}"
+        data-interval="{{ settings.intervalBetween | default: 8000 }}"
+        data-first-delay="{{ settings.firstDelayMs | default: 3000 }}"
+        data-randomize="{{ settings.randomizeOrder | default: true }}"
+        data-show-time-ago="{{ settings.showTimeAgo | default: true }}"
+        data-items="{{ settings.demoItems | json | escape }}"
+        data-brand-line="{{ settings.brandLine | escape }}"
+        data-real-url="/apps/proxy/social-proof?shop={{ shop.permanent_domain }}"
+        style="
+          --sb-sp-bg: {{ settings.bgColor | default: '#ffffff' }};
+          --sb-sp-gradient-start: {{ settings.gradientStart | default: '#fff9db' }};
+          --sb-sp-gradient-end: {{ settings.gradientEnd | default: '#ffe3ec' }};
+          --sb-sp-text: {{ settings.textColor | default: '#202223' }};
+          --sb-sp-accent: {{ settings.accentColor | default: '#008060' }};
+          --sb-sp-font-mobile: {{ settings.fontSizeMobile | default: 12 }}px;
+          --sb-sp-font-desktop: {{ settings.fontSizeDesktop | default: 14 }}px;
+        "
+      ></div>
 
     <style>
       .sb-sp-container {
@@ -189,8 +191,6 @@
           items = [];
         }
 
-        if (items.length === 0) return;
-
         var template = container.dataset.template;
         var brandLine = container.dataset.brandLine || "";
         var displayDuration = parseInt(container.dataset.displayDuration, 10);
@@ -198,6 +198,38 @@
         var firstDelay = parseInt(container.dataset.firstDelay, 10);
         var randomize = container.dataset.randomize === "true";
         var showTimeAgo = container.dataset.showTimeAgo === "true";
+        var mode = container.dataset.mode || "demo";
+
+        function loadRealItems() {
+          if (!container.dataset.realUrl) return Promise.resolve([]);
+
+          return fetch(container.dataset.realUrl)
+            .then(function (response) {
+              if (!response.ok) return [];
+              return response.json();
+            })
+            .then(function (payload) {
+              return Array.isArray(payload && payload.items) ? payload.items : [];
+            })
+            .catch(function () {
+              return [];
+            });
+        }
+
+        if (mode === "real") {
+          loadRealItems().then(function (realItems) {
+            items = realItems;
+            if (items.length === 0) return;
+            startQueue();
+          });
+          return;
+        }
+
+        if (items.length === 0) return;
+
+        startQueue();
+
+        function startQueue() {
 
         var typeIcons = {
           purchase: "🛒",
@@ -344,9 +376,11 @@
           setTimeout(showNext, interval);
         }
 
-        setTimeout(showNext, firstDelay);
+          setTimeout(showNext, firstDelay);
+        }
       })();
     </script>
+    {% endif %}
   {% endif %}
 {% endif %}
 
