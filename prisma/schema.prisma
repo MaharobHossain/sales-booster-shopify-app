@@ -114,3 +114,13 @@ model SocialProof {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  shop      String
+  feature   String
+  eventType String
+  createdAt DateTime @default(now())
+
+  @@index([shop, feature, eventType])
+}
