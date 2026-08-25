@@ -49,3 +49,13 @@ required = true
 [metaobjects.app.example.fields.description]
 name = "Description"
 type = "multi_line_text_field"
+
+
+[events]
+api_version = "unstable"
+
+  [[events.subscription]]
+  handle = "product-updates"
+  topic = "Product"
+  actions = [ "update" ]
+  uri = "/events/products"
